@@ -2,12 +2,34 @@
 
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface PhoneFrameProps {
   children: ReactNode
 }
 
 export function PhoneFrame({ children }: PhoneFrameProps) {
+  const isMobile = useIsMobile()
+
+  // 移动设备：全屏原生app体验
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 flex flex-col" style={{ background: '#F2F1F6' }}>
+        {/* 状态栏 */}
+        <StatusBar />
+        
+        {/* 内容区域 - 全屏 */}
+        <div className="flex-1 overflow-hidden">
+          {children}
+        </div>
+        
+        {/* Home Indicator */}
+        <HomeIndicator />
+      </div>
+    )
+  }
+
+  // 桌面设备：手机模拟器效果
   return (
     <div className="relative mx-auto">
       {/* 外部光晕效果 - VitaFlow 风格 */}

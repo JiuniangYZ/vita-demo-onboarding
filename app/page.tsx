@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useOnboardingStore } from '@/store/onboarding-store'
 import { useABTestStore, VERSION_INFO, FlowVersion } from '@/store/ab-test-store'
@@ -8,6 +9,9 @@ import { getScreenConfig, screensConfig } from '@/data/screens-config'
 import { getScreenConfigV2, screensConfigV2 } from '@/data/screens-config-v2'
 import { PhoneFrame } from '@/components/ui/PhoneFrame'
 import { ScreenRenderer } from '@/components/screens'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useSwipeGesture } from '@/hooks/useSwipeGesture'
+import { MobileDevTools } from '@/components/ui/MobileDevTools'
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -18,6 +22,8 @@ import {
 } from 'lucide-react'
 
 export default function OnboardingDemoPage() {
+  const isMobile = useIsMobile()
+  const pathname = usePathname()
   const { 
     currentStep, 
     totalSteps, 
@@ -31,6 +37,17 @@ export default function OnboardingDemoPage() {
   } = useOnboardingStore()
   
   const { currentVersion, setVersion } = useABTestStore()
+  
+  // 根据URL路径自动设置初始版本 (仅在首次加载时)
+  useEffect(() => {
+    if (pathname === '/v1') {
+      setVersion('v1')
+    } else if (pathname === '/v2') {
+      setVersion('v2')
+    }
+    // 只在组件挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   
   // 根据版本获取配置
   const currentConfig = currentVersion === 'v2' 
@@ -71,6 +88,34 @@ export default function OnboardingDemoPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [nextStep, prevStep, resetDemo])
   
+  // 移动端手势支持：左右滑动切换页面
+  useSwipeGesture({
+    onSwipeLeft: () => {
+      if (isMobile && currentStep < totalSteps) {
+        nextStep()
+      }
+    },
+    onSwipeRight: () => {
+      if (isMobile && currentStep > 1) {
+        prevStep()
+      }
+    },
+    threshold: 100 // 滑动100px触发
+  })
+  
+  // 移动设备：纯净的原生app体验
+  if (isMobile) {
+    return (
+      <>
+        <PhoneFrame>
+          <ScreenRenderer />
+        </PhoneFrame>
+        <MobileDevTools />
+      </>
+    )
+  }
+  
+  // 桌面设备：完整的Demo控制界面
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* 背景装饰 */}
